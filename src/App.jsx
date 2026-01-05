@@ -16,7 +16,6 @@ import {
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 import DailyTimeGrid from './components/DailyTimeGrid'
-import SignaturePad from './components/SignaturePad'
 
 // Seeded timesheet data
 const initialTimesheets = []
@@ -450,39 +449,20 @@ function App() {
     doc.line(dateX + 15, employeeSignatureY, dateX + 15 + dateLineWidth, employeeSignatureY)
     employeeSignatureY += 15
     
-    // Foreman Signature and Date (show actual signature image drawn in app)
-    const foremanSignatureY = employeeSignatureY + 5
+    // Superintendent Signature and Date (blank line for physical signing)
+    let superintendentSignatureY = employeeSignatureY + 5
     doc.setFontSize(9)
     doc.setFont(undefined, 'normal')
-    doc.text('Foreman Signature', tableStartX, foremanSignatureY)
-    const foremanImgY = foremanSignatureY + 8
+    doc.text('Superintendent Signature', tableStartX, superintendentSignatureY)
+    superintendentSignatureY += 8
     
-    if (selectedTimesheet.foremanSignature) {
-      try {
-        // Add signature image that was drawn with mouse in the app
-        const imgWidth = 60
-        const imgHeight = 25
-        doc.addImage(selectedTimesheet.foremanSignature, 'PNG', tableStartX, foremanImgY, imgWidth, imgHeight)
-        
-        // Date that foreman selected in the app (match what's shown in UI)
-        const foremanDateX = tableStartX + imgWidth + 20
-        doc.text('Date:', foremanDateX, foremanImgY + 5)
-        const foremanDateValue = selectedTimesheet.signatureDate || new Date().toISOString().split('T')[0]
-        doc.text(formatDate(foremanDateValue), foremanDateX + 15, foremanImgY + 5)
-      } catch (error) {
-        console.error('Error adding foreman signature to PDF:', error)
-        doc.text('Foreman Signature: [Signature not available]', tableStartX, foremanImgY)
-        const foremanDateValueFallback = selectedTimesheet.signatureDate || new Date().toISOString().split('T')[0]
-        doc.text('Date: ' + formatDate(foremanDateValueFallback), tableStartX, foremanImgY + 6)
-      }
-    } else {
-      // If no signature drawn, show blank line
-      doc.line(tableStartX, foremanImgY, tableStartX + 80, foremanImgY)
-      const foremanDateX = tableStartX + 100
-      doc.text('Date:', foremanDateX, foremanImgY)
-      const foremanDateValueNoSig = selectedTimesheet.signatureDate || new Date().toISOString().split('T')[0]
-      doc.text(formatDate(foremanDateValueNoSig), foremanDateX + 15, foremanImgY)
-    }
+    // Draw signature line (reuse signatureLineWidth from Employee section)
+    doc.line(tableStartX, superintendentSignatureY, tableStartX + signatureLineWidth, superintendentSignatureY)
+    
+    // Date line for manual entry (blank line, not showing the date value)
+    const superintendentDateX = tableStartX + signatureLineWidth + 20
+    doc.text('Date:', superintendentDateX, superintendentSignatureY)
+    doc.line(superintendentDateX + 15, superintendentSignatureY, superintendentDateX + 15 + dateLineWidth, superintendentSignatureY)
     
     doc.save(`timesheet-${selectedTimesheet.employeeName}-${selectedTimesheet.weekEnding}.pdf`)
   }
@@ -1127,38 +1107,6 @@ function App() {
                 initialData={selectedTimesheet.dailyTimeGrid}
                 initialRate={selectedTimesheet.ratePerHour}
               />
-              
-              <div className="mt-6 border-t border-gray-200 pt-4">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Signatures</h2>
-                
-                {/* Foreman Signature Section */}
-                {/* Mobile: Stacked layout with signature on top, date centered below */}
-                <div className="flex flex-col md:flex-row gap-4 md:gap-4 items-center md:items-start md:justify-center">
-                  <div className="flex flex-col items-center w-full md:flex-1 md:max-w-md">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Foreman Signature
-                    </label>
-                    <p className="text-xs text-gray-500 mb-2 text-center">Draw your signature using your mouse or touch screen</p>
-                    <div className="w-full">
-                      <SignaturePad
-                        value={selectedTimesheet.foremanSignature || ''}
-                        onChange={(dataURL) => setSelectedTimesheet({ ...selectedTimesheet, foremanSignature: dataURL })}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-center w-full md:w-40 md:flex-shrink-0">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date
-                    </label>
-                    <input
-                      type="date"
-                      value={selectedTimesheet.signatureDate || new Date().toISOString().split('T')[0]}
-                      onChange={(e) => setSelectedTimesheet({ ...selectedTimesheet, signatureDate: e.target.value })}
-                      className="w-full max-w-xs md:max-w-none px-3 py-2.5 md:py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] md:min-h-0"
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
